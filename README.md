@@ -18,15 +18,16 @@
 
 目前收集和整理的资料来源包括：
 
-- [ ] **银色子弹**
-- [ ] **名侦探柯南事务所论坛**
+- [ ] **银色子弹**：https://www.sbsub.com/posts/category/interviews/
+- [ ] **名侦探柯南事务所论坛**：https://bbs.aptx.cn/thread-296846-1-1.html
 - [ ] **B站**：访谈视频、专栏文章等
 - [ ] **贴吧访谈整理贴**  
   - [ ] 柯南吧  
   - [ ] 柯哀分析文吧
 - [ ] **外网博客与平台**  
   - [ ] 日 fan 博客：[http://bdamakuriimu.blog38.fc2.com/blog-entry-215.html](http://bdamakuriimu.blog38.fc2.com/blog-entry-215.html)  
-  - [ ] 高山南博客、林原广播、X（原推特）等  
+  - [ ] 高山南博客、林原广播、X（原推特）等
+  - [ ] 印度蜜蜂和翎月推荐的平台：http://ww2.kenanapp.com/lander 
   - [ ] 其他官方消息来源
 
 > ✅ 所有资料均存储为结构化文本，统一编码，便于后续处理与检索。

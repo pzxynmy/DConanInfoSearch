@@ -110,3 +110,6 @@ dmypy.json
 .pytype/
 
 test/
+
+# extracted blogs files
+data/hayashibara_blogs/blogs/

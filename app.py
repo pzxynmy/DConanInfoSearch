@@ -12,27 +12,56 @@ ENABLE_CACHE = os.environ.get("ENABLE_CACHE", "true").lower() == "true"
 manga_text_cache = {}  # 漫画文本缓存
 interview_text_cache = {}  # 访谈文本缓存
 
-# 🚀 缓存初始化函数
-def init_manga_cache():
-    """初始化漫画文本缓存"""
-    if not ENABLE_CACHE or manga_text_cache:
+# 🚀 通用缓存初始化辅助函数
+def _init_cache_from_directory(cache_dict, base_dir, content_type, use_walk=False):
+    """通用缓存初始化函数
+    
+    Args:
+        cache_dict: 目标缓存字典
+        base_dir: 基础目录路径
+        content_type: 内容类型描述（用于日志）
+        use_walk: 是否使用os.walk递归遍历子目录
+    """
+    if not ENABLE_CACHE or cache_dict:
         return
     
-    base_dir = "data/japanese_text"
     if not os.path.exists(base_dir):
         return
     
-    print("📥 正在预加载漫画文本到内存缓存...")
-    for filename in os.listdir(base_dir):
-        if filename.endswith(".txt"):
-            file_path = os.path.join(base_dir, filename)
-            try:
-                with open(file_path, encoding="utf-8") as f:
-                    manga_text_cache[filename] = f.read()
-            except Exception as e:
-                print(f"❌ 缓存文件失败 {filename}: {e}")
+    print(f"📥 正在预加载{content_type}到内存缓存...")
     
-    print(f"✅ 已缓存 {len(manga_text_cache)} 个漫画文件")
+    if use_walk:
+        # 递归遍历子目录
+        for root, _, files in os.walk(base_dir):
+            for filename in files:
+                if filename.endswith(".txt"):
+                    filepath = os.path.join(root, filename)
+                    rel_path = os.path.relpath(filepath, base_dir)
+                    try:
+                        with open(filepath, encoding="utf-8") as f:
+                            cache_dict[rel_path] = f.read()
+                    except Exception as e:
+                        print(f"❌ 缓存文件失败 {rel_path}: {e}")
+    else:
+        # 只遍历当前目录
+        for filename in os.listdir(base_dir):
+            if filename.endswith(".txt"):
+                file_path = os.path.join(base_dir, filename)
+                try:
+                    with open(file_path, encoding="utf-8") as f:
+                        cache_dict[filename] = f.read()
+                except Exception as e:
+                    print(f"❌ 缓存文件失败 {filename}: {e}")
+    
+    print(f"✅ 已缓存 {len(cache_dict)} 个{content_type}文件")
+
+def init_manga_cache():
+    """初始化漫画文本缓存"""
+    _init_cache_from_directory(manga_text_cache, "data/japanese_text", "漫画文本")
+
+def init_interview_cache():
+    """初始化访谈文本缓存"""
+    _init_cache_from_directory(interview_text_cache, "data/interviews", "访谈文本", use_walk=True)
 
 # 功能一：漫画文本检索（优化版）
 def count_word_in_documents(word):
@@ -96,30 +125,6 @@ def search():
     result = count_word_in_documents(word)
     return jsonify(result)
 
-# 🚀 访谈缓存初始化函数
-def init_interview_cache():
-    """初始化访谈文本缓存"""
-    if not ENABLE_CACHE or interview_text_cache:
-        return
-    
-    base_dir = "data/interviews"
-    if not os.path.exists(base_dir):
-        return
-    
-    print("📥 正在预加载访谈文本到内存缓存...")
-    for root, dirs, files in os.walk(base_dir):
-        for filename in files:
-            if filename.endswith(".txt"):
-                filepath = os.path.join(root, filename)
-                rel_path = os.path.relpath(filepath, base_dir)
-                try:
-                    with open(filepath, encoding="utf-8") as f:
-                        interview_text_cache[rel_path] = f.read()
-                except Exception as e:
-                    print(f"❌ 缓存访谈文件失败 {rel_path}: {e}")
-    
-    print(f"✅ 已缓存 {len(interview_text_cache)} 个访谈文件")
-
 # 访谈资料接口（优化版）
 @app.route("/interview_search", methods=["POST"])
 def interview_search():
@@ -137,7 +142,7 @@ def interview_search():
     else:
         # 原始方式：直接读取文件
         file_data = {}
-        for root, dirs, files in os.walk(base_dir):
+        for root, _, files in os.walk(base_dir):
             for filename in files:
                 if filename.endswith(".txt"):
                     filepath = os.path.join(root, filename)

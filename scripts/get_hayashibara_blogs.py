@@ -17,6 +17,7 @@
 """
 import os
 import json
+import re
 from tqdm import tqdm
 from typing import List, Optional
 import requests
@@ -58,20 +59,20 @@ def get_up_to_date_blog_entries(page_urls:List[str]):
         for entry in entries:
             a_tag = entry.find("a")
             if a_tag and a_tag.has_attr("href"):
-                entry_id =  a_tag["href"][-16:-5]
-                title = a_tag.get_text(strip=True)
-                try:
-                    test_id = int(entry_id)
-                except ValueError:
-                    print(f"Invalid entry ID: {entry_id} in {page_url}")
+                match = re.search(r'/entry-(\d+)\.html', a_tag["href"])
+                if match:
+                    entry_id = match.group(1)
+                else:
+                    print(f"Could not extract entry ID from URL: {a_tag['href']}")
                     continue
+                title = a_tag.get_text(strip=True)
+                
                 blog_entries_map[entry_id] = title
     return blog_entries_map
 
 
-def count_cached_blog_entries(meta_path:str) -> Optional[dict]:
+def count_cached_blog_entries(meta_path:str) -> Optional[int]:
     # read the blog entries mapping from json
-    import json
     if not os.path.exists(meta_path):
         print(f"File not found: {meta_path}")
         return None
@@ -108,7 +109,7 @@ def save_blogs_text(meta_path:str):
     os.makedirs(save_path, exist_ok=True)
     with open(meta_path, "r", encoding="utf-8") as f:
         meta_data = json.load(f)
-    base_url = meta_data["base_url"]
+    base_url = meta_data.get("base_url", "https://ameblo.jp/megumi--hayashibara/entry-ENTRYID.html")
     entries = meta_data["entries"]
     all_entry_ids = [entry["id"] for entry in entries]
     existing_entry_ids = [os.path.splitext(f)[0] for f in os.listdir(save_path) if f.endswith(".txt")]

@@ -91,14 +91,31 @@ install_python() {
 install_dependencies() {
     log_info "安装Python依赖包..."
     
+    # 检查是否需要虚拟环境（Ubuntu 24.04+）
+    local use_venv=false
+    if [[ "$OS" == *"Ubuntu"* ]] && [[ "${VER%%.*}" -ge 24 ]]; then
+        use_venv=true
+        log_info "检测到Ubuntu 24.04+，将使用虚拟环境"
+    fi
+    
     # 创建requirements文件
     cat > /tmp/keep_alive_requirements.txt << EOF
 requests>=2.25.0
 EOF
     
-    pip3 install -r /tmp/keep_alive_requirements.txt --user
-    rm /tmp/keep_alive_requirements.txt
+    if $use_venv; then
+        # 使用系统包管理器安装（推荐方式）
+        if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
+            log_info "使用系统包管理器安装requests..."
+            sudo apt update
+            sudo apt install -y python3-requests python3-venv python3-full
+        fi
+    else
+        # 传统方式安装
+        pip3 install -r /tmp/keep_alive_requirements.txt --user
+    fi
     
+    rm /tmp/keep_alive_requirements.txt
     log_info "依赖安装完成"
 }
 
@@ -110,16 +127,31 @@ setup_directories() {
     
     mkdir -p "$work_dir"/{scripts,logs,config}
     
-    # 复制脚本文件（假设当前在项目根目录）
-    if [[ -f "scripts/vps_keep_alive.py" ]]; then
-        cp scripts/vps_keep_alive.py "$work_dir/scripts/"
-        cp scripts/keep_alive_config.json "$work_dir/config/"
-        chmod +x "$work_dir/scripts/vps_keep_alive.py"
+    # 检查脚本文件位置（考虑多种可能路径）
+    local script_file=""
+    local config_file=""
+    
+    # 尝试不同的文件路径
+    if [[ -f "scripts/alive/vps_keep_alive.py" ]]; then
+        script_file="scripts/alive/vps_keep_alive.py"
+        config_file="scripts/alive/keep_alive_config.json"
+    elif [[ -f "vps_keep_alive.py" ]]; then
+        script_file="vps_keep_alive.py"
+        config_file="keep_alive_config.json"
+    elif [[ -f "../vps_keep_alive.py" ]]; then
+        script_file="../vps_keep_alive.py"
+        config_file="../keep_alive_config.json"
     else
-        log_error "找不到监控脚本文件，请确保在项目根目录运行此脚本"
+        log_error "找不到监控脚本文件，请确保vps_keep_alive.py在当前目录或scripts/alive/目录"
         exit 1
     fi
     
+    # 复制文件
+    cp "$script_file" "$work_dir/scripts/"
+    cp "$config_file" "$work_dir/config/"
+    chmod +x "$work_dir/scripts/vps_keep_alive.py"
+    
+    log_info "脚本文件已复制到工作目录"
     echo "$work_dir"
 }
 

@@ -115,6 +115,28 @@ def count_word_in_documents(word):
     result.sort(key=lambda x: x["volume"])
     return result
 
+def startup_check():
+    print("\n🚀 启动时自动检查子模块数据是否成功加载...")
+
+    from utils.config import MANGA_TEXT_DIR
+
+    print(f"📁 当前工作目录: {os.getcwd()}")
+    print(f"📂 MANGA_TEXT_DIR: {MANGA_TEXT_DIR}")
+    if not os.path.exists(MANGA_TEXT_DIR):
+        print("❌ 路径不存在！可能 submodule 没被正确拉取")
+    else:
+        try:
+            files = [f for f in os.listdir(MANGA_TEXT_DIR) if f.endswith(".txt")]
+            print(f"📄 找到 {len(files)} 个文本文件: {files[:3]}...")
+        except Exception as e:
+            print(f"❌ 列出文件时出错: {e}")
+    
+    if ENABLE_CACHE:
+        print(f"📦 manga_text_cache 当前大小: {len(manga_text_cache)}")
+
+    print("✅ 检查完成\n")
+
+
 # 首页：返回 HTML 页面
 @app.route("/")
 def home():
@@ -217,5 +239,6 @@ def ping():
 
 # 启动服务（适配 Render 的 PORT 环境变量）
 if __name__ == "__main__":
+    startup_check()
     port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port)

@@ -113,3 +113,6 @@ test/
 
 # extracted blogs files
 data/hayashibara_blogs/blogs/
+
+# quiz bank file
+quiz_bank.json

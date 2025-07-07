@@ -4,6 +4,7 @@ import re
 import time
 
 from utils.interview_sources import get_interview_metadata
+from utils.config import MANGA_TEXT_DIR, INTERVIEW_DATA_DIR
 
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
@@ -58,16 +59,16 @@ def _init_cache_from_directory(cache_dict, base_dir, content_type, use_walk=Fals
 
 def init_manga_cache():
     """初始化漫画文本缓存"""
-    _init_cache_from_directory(manga_text_cache, "data/japanese_text", "漫画文本")
+    _init_cache_from_directory(manga_text_cache, MANGA_TEXT_DIR, "漫画文本")
 
 def init_interview_cache():
     """初始化访谈文本缓存"""
-    _init_cache_from_directory(interview_text_cache, "data/interviews", "访谈文本", use_walk=True)
+    _init_cache_from_directory(interview_text_cache, INTERVIEW_DATA_DIR, "访谈文本", use_walk=True)
 
 # 功能一：漫画文本检索（优化版）
 def count_word_in_documents(word):
     result = []
-    base_dir = "data/japanese_text"
+    base_dir = MANGA_TEXT_DIR
     
     # 🚀 使用缓存或直接读取文件
     if ENABLE_CACHE:
@@ -130,7 +131,7 @@ def search():
 @app.route("/interview_search", methods=["POST"])
 def interview_search():
     word = request.form.get("word", "").strip()
-    base_dir = "data/interviews"
+    base_dir = INTERVIEW_DATA_DIR
     results = []
 
     if not word:

@@ -1,0 +1,4 @@
+[submodule "data/submodule_data"]
+	path = data/submodule_data
+        url = https://github.com/pingzheshenhei/ConanMangaText.git
+

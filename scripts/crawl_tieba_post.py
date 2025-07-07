@@ -403,7 +403,7 @@ class TiebaPostCrawler:
             # 提取帖子内容
             content = ""
             content_selectors = [
-                '.d_post_content j_d_post_content',
+                '.d_post_content',
                 '.j_d_post_content',
                 '.post-content',
                 '.content',

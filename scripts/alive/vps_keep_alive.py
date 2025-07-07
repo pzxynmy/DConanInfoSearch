@@ -82,17 +82,24 @@ class RenderKeepAliveMonitor:
                 "alert_after_failures": 5
             }
         }
-        
+    
+        def deep_merge(default: dict, override: dict) -> dict:
+            for key, value in override.items():
+                if key in default and isinstance(default[key], dict) and isinstance(value, dict):
+                    default[key] = deep_merge(default[key], value)
+                else:
+                    default[key] = value
+            return default
+    
         if os.path.exists(self.config_file):
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     loaded_config = json.load(f)
-                    # 合并配置，保持默认值
-                    default_config.update(loaded_config)
-                    return default_config
+                    # Perform a deep merge instead of shallow update
+                    return deep_merge(default_config, loaded_config)
             except Exception as e:
                 print(f"❌ 配置文件加载失败，使用默认配置: {e}")
-        
+    
         # 创建默认配置文件
         self.save_config(default_config)
         return default_config

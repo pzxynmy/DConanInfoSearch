@@ -4,6 +4,10 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements.txt"
+
+    buildCommand: |
+      pip install -r requirements.txt
+      bash setup_data.sh
+
     startCommand: "python app.py"
     autoDeploy: true

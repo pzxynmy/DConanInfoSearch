@@ -152,7 +152,9 @@ setup_directories() {
     chmod +x "$work_dir/scripts/vps_keep_alive.py"
     
     log_info "脚本文件已复制到工作目录"
-    echo "$work_dir"
+    
+    # 只返回工作目录路径，不要有其他输出
+    printf "%s" "$work_dir"
 }
 
 # 创建systemd服务

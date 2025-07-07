@@ -207,7 +207,6 @@ def ask():
 @app.route("/ping", methods=["GET"])
 def ping():
     """轻量级健康检查endpoint，用于防止Render服务器休眠"""
-    import time
     return jsonify({
         "status": "alive",
         "timestamp": int(time.time()),

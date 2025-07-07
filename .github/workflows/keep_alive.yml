@@ -1,0 +1,64 @@
+name: Keep Render Server Alive
+
+on:
+  schedule:
+    # 每13分钟执行一次 - 避免Render免费层休眠
+    # GitHub Actions的cron语法：分钟 小时 日 月 星期
+    # */13 表示每13分钟执行一次
+    - cron: '*/13 * * * *'
+  
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Ping Render Server
+      run: |
+        echo "🚀 开始检查服务器状态..."
+        echo "⏰ 当前时间: $(date)"
+        
+        # 设置目标URL
+        URL="https://dconaninfosearch.onrender.com/ping"
+        
+        # 发送HTTP请求并记录结果
+        echo "📡 正在ping: $URL"
+        
+        # 使用curl发送请求，设置超时和重试
+        response=$(curl -s -w "\n状态码: %{http_code}\n响应时间: %{time_total}s\n大小: %{size_download} bytes" \
+          --max-time 30 \
+          --retry 3 \
+          --retry-delay 5 \
+          --user-agent "GitHub-Actions-KeepAlive/1.0" \
+          "$URL" || echo "请求失败")
+        
+        echo "📊 响应结果:"
+        echo "$response"
+        
+        # 检查响应是否包含"alive"
+        if echo "$response" | grep -q "alive"; then
+          echo "✅ 服务器状态正常"
+          echo "🎯 成功防止Render服务器休眠"
+        else
+          echo "⚠️ 服务器响应异常，可能需要检查"
+          # 不让workflow失败，因为这只是一个keep-alive任务
+        fi
+        
+        echo "⏰ 完成时间: $(date)"
+        echo "🔄 下次检查将在13分钟后进行"
+
+    - name: Log Keep-Alive Activity
+      run: |
+        echo "📝 记录监控活动"
+        echo "任务ID: ${{ github.run_id }}"
+        echo "工作流: ${{ github.workflow }}"
+        echo "触发事件: ${{ github.event_name }}"
+        
+        # 简单的状态统计
+        if [ "${{ github.event_name }}" = "schedule" ]; then
+          echo "🤖 自动定时任务执行"
+        else
+          echo "👤 手动触发执行"
+        fi

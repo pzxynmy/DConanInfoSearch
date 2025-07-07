@@ -203,6 +203,17 @@ def ask():
     question = request.form.get("question", "")
     return jsonify({"answer": f"暂未接入 LLM，收到问题：{question}"})
 
+# 防休眠监控endpoint - 轻量级健康检查
+@app.route("/ping", methods=["GET"])
+def ping():
+    """轻量级健康检查endpoint，用于防止Render服务器休眠"""
+    import time
+    return jsonify({
+        "status": "alive",
+        "timestamp": int(time.time()),
+        "message": "Server is active"
+    }), 200
+
 # 启动服务（适配 Render 的 PORT 环境变量）
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))

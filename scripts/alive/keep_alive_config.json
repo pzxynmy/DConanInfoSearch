@@ -1,0 +1,33 @@
+{
+  "targets": [
+    {
+      "name": "DConanInfoSearch",
+      "url": "http://165.232.148.2:7860/ping",
+      "enabled": true
+    }
+  ],
+  "schedule": {
+    "min_interval_minutes": 12,
+    "max_interval_minutes": 14,
+    "avoid_night_hours": true,
+    "night_start": 2,
+    "night_end": 6
+  },
+  "request": {
+    "timeout": 30,
+    "max_retries": 3,
+    "retry_delay": 5,
+    "user_agent": "VPS-KeepAlive-Monitor/1.0"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/keep_alive.log",
+    "max_size_mb": 10,
+    "backup_count": 5
+  },
+  "notifications": {
+    "enabled": false,
+    "webhook_url": "",
+    "alert_after_failures": 5
+  }
+}

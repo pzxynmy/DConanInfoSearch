@@ -1,13 +1,17 @@
 services:
   - type: web
-    name: japanese-word-search
+    name: dconaninfosearch
     env: python
     region: oregon
     plan: free
-
     buildCommand: |
+      git submodule update --init --recursive
       pip install -r requirements.txt
-      bash setup_data.sh
-
     startCommand: "python app.py"
     autoDeploy: true
+    envVars:
+      - key: GIT_SUBMODULE_SSH_KEY
+        value: |
+          -----BEGIN OPENSSH PRIVATE KEY-----
+          ...
+          -----END OPENSSH PRIVATE KEY-----

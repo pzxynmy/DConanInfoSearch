@@ -5,6 +5,8 @@ VPS部署版本 - Render服务器防休眠监工程序
 适用：可在任何VPS或本地环境运行
 作者：Claude Code
 版本：1.0
+test url: "http://165.232.148.2:7860/ping"
+部署后需改成: “https://dconaninfosearch.onrender.com/ping”
 """
 
 import time
@@ -23,7 +25,7 @@ import threading
 class RenderKeepAliveMonitor:
     """Render服务器防休眠监控器"""
     
-    def __init__(self, config_file: str = "scripts/keep_alive_config.json"):
+    def __init__(self, config_file: str = "scripts/alive/keep_alive_config.json"):
         self.config_file = config_file
         self.config = self.load_config()
         self.running = False
@@ -51,7 +53,7 @@ class RenderKeepAliveMonitor:
             "targets": [
                 {
                     "name": "DConanInfoSearch",
-                    "url": "https://dconaninfosearch.onrender.com/ping",
+                    "url": "http://165.232.148.2:7860/ping",
                     "enabled": True
                 }
             ],
@@ -373,7 +375,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Render服务器防休眠监控程序")
-    parser.add_argument("-c", "--config", default="scripts/keep_alive_config.json", 
+    parser.add_argument("-c", "--config", default="scripts/alive/keep_alive_config.json", 
                        help="配置文件路径")
     parser.add_argument("-d", "--daemon", action="store_true", 
                        help="后台模式运行")

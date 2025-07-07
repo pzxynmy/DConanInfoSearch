@@ -2,7 +2,7 @@
   "targets": [
     {
       "name": "DConanInfoSearch",
-      "url": "https://dconaninfosearch.onrender.com/ping",
+      "url": "http://165.232.148.2:7860/ping",
       "enabled": true
     }
   ],

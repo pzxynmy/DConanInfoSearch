@@ -30,6 +30,12 @@ quiz_bank = load_quiz_bank()
 # =============================
 @app.route("/", methods=["GET", "POST"])
 def quiz_entry():
+    if not quiz_bank:
+        print("⚠️ 当前无题库，自动跳过验证流程")
+        resp = make_response(redirect("/search_page"))
+        resp.set_cookie("verified", "true")
+        return resp
+
     if request.method == "POST":
         user_answer = request.form.get("answer", "").strip()
         correct_answer = session.get("correct_answer", "")
@@ -39,9 +45,7 @@ def quiz_entry():
             return resp
         return render_template("quiz.html", question=session.get("question", "题库加载失败"), error="回答错误，请再试一次")
 
-    # GET: 出题
-    if not quiz_bank:
-        return "题库加载失败"
+    # GET 出题
     q = random.choice(quiz_bank)
     session["question"] = q["question"]
     session["correct_answer"] = q["answer"]

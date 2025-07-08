@@ -1,78 +1,141 @@
+# 🕵️‍♀️ DConanInfoSearch
 
-# DConanInfoSearch
+一个为《名侦探柯南》粉丝打造的开放式信息检索平台。
 
-一个为《名侦探柯南》粉丝打造的信息检索平台，支持漫画原文定位与访谈内容搜索。
-
----
-
-## 🧭 项目简介
-
-本平台旨在帮助柯南粉丝快速查找幕后访谈、角色解析、制作团队信息等内容。通过整合多个来源的数据，用户可以：
-
-- 🔍 搜索关键词，定位其在漫画原文或访谈中的位置  
-- 🌐 查找不同平台搬运的访谈资料，追溯原始出处或原文链接  
+本项目致力于收集、整理并结构化柯南的幕后访谈与漫画文本，构建一个支持关键词搜索和问答的网页应用，帮助粉丝高效定位资料内容。
 
 ---
 
-## 📚 数据来源（持续更新中）
+## 🚀 功能简介
 
-我们整理了来自以下平台的访谈内容：
+- 🔍 **关键词检索：**
+  - 支持搜索漫画日文原文，定位某个关键词首次或集中出现的位置。
+  - 支持搜索访谈资料，展示关键词出现次数、出处链接、上下文片段。
 
-- [银色子弹](https://www.sbsub.com/posts/category/interviews/)
-- [名侦探柯南事务所](https://bbs.aptx.cn/thread-296846-1-1.html)
-- B站专栏与访谈视频
-- 百度贴吧（柯南吧 / 柯哀分析文吧）
-- 外网博客与平台（高山南博客、林原广播、X、fan博客等）
-- 推荐合集站点：[http://ww2.kenanapp.com/lander](http://ww2.kenanapp.com/lander)
+- 🧠 **问答验证（可选）**
+  - 首页支持答题验证（题库可选加载），用于限制访问搜索功能。
+  - 若本地未配置题库，则默认跳过验证直接进入搜索界面。
 
 ---
 
-## 🛠 使用 & 开发指南
+## 📁 项目结构概览
 
-### 🔧 本地运行
+```
+.
+├── app.py                 # 主程序入口
+├── templates/             # 网页模板目录（HTML）
+├── static/                # 静态资源目录（CSS/JS）
+├── scripts/               # 数据爬取与处理脚本
+├── utils/                 # 各类辅助工具函数
+│   ├── quiz_utils.py      # 题库加载与首页答题逻辑
+│   ├── search_utils.py    # 文本检索核心逻辑
+│   ├── interview_sources.py # 访谈元信息指路
+│   └── ...
+└── data/                  # 可选的数据目录（如漫画文本、访谈原文等）
+```
+
+---
+
+## 🛠 本地运行
+
+### 1. 克隆项目
 
 ```bash
-git clone https://github.com/e9la/DConanInfoSearch.git
+git clone https://github.com/你的用户名/DConanInfoSearch.git
 cd DConanInfoSearch
+```
+
+### 2. 安装依赖
+
+推荐使用 Python 3.9+
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. 本地运行网站
+
+```bash
 python app.py
 ```
 
-浏览器打开 `http://10.0.0.94:7860` 查看界面。
+默认打开 http://10.0.0.94:7860
 
-### 📁 项目结构简览
+---
 
+## 💬 可选题库支持
+
+### 开启答题验证（线上版默认启用）
+
+首页答题功能需要加载本地 `quiz_bank.json` 或环境变量 `QUIZ_BANK_JSON`。题库为 JSON 数组，格式如下：
+
+```json
+[
+  {
+    "question": "工藤新一第一次出场是在第几话？",
+    "answer": "1"
+  },
+  ...
+]
 ```
-DConanInfoSearch/
-│
-├── app.py                 # 主程序入口，Flask 后端逻辑
-├── templates/             # HTML 页面模板
-├── utils/                 # 支撑函数（搜索、文本处理等）
-├── scripts/               # 爬虫与数据处理脚本（与网页无关）
-└── data/                  # 存储结构化文本数据
-```
+
+如果未设置本地文件或环境变量，网站将自动跳过验证，直接放行。
 
 ---
 
 ## 🤝 如何贡献
 
-1. 发现问题？欢迎创建 issue。  
-2. 想参与开发？可以在 [issue 列表](https://github.com/e9la/DConanInfoSearch/issues) 中选择任务，留言认领避免重复。  
-3. fork 本仓库，修改代码后提交 Pull Request。
+### 🔍 想参与但不知做什么？
 
-贡献建议包括：
+1. 浏览已有的 [Issues](https://github.com/你的用户名/DConanInfoSearch/issues)
+2. 留言认领一个 issue，避免重复劳动
 
-- 增加访谈数据源爬虫
-- 优化搜索算法与关键词定位
-- 改进前端样式与用户交互体验
+### 🧩 贡献流程
+
+```bash
+# Fork 本仓库
+# 克隆到本地
+git clone https://github.com/你的用户名/DConanInfoSearch.git
+
+# 创建新分支
+git checkout -b feature/xxx
+
+# 开发 + 提交 + 推送
+git commit -m "添加 xxx 功能"
+git push origin feature/xxx
+
+# 提交 Pull Request
+```
 
 ---
 
-## 📌 注意事项
+### ⚠️ 重要说明
 
-所有内容来自公开网络，仅用于非商业学术研究与粉丝整理。如有版权问题请联系我们处理。
+漫画文本数据通过 Git 子模块管理，存放于私有仓库，  
+因此**本地运行时如果未正确初始化和拉取该子模块，漫画文本检索功能将不可用**。  
+访谈资料搜索功能不受影响，依然可以正常使用。
+
+如果需要完整体验漫画文本检索，建议确保已初始化并更新子模块，或者部署到支持访问私有仓库的服务器环境（如 Render）。
 
 ---
 
-## 🌐 在线试用（开发中）
+## 📌 声明
 
-试用地址：[https://dconaninfosearch.onrender.com](https://dconaninfosearch.onrender.com)
+本项目所有资料均来自公开互联网，仅供非商业学术与粉丝整理使用。如涉及版权问题请联系删除。
+
+---
+
+## 🌐 在线体验（开发中）
+
+> 尝试预览地址：  
+> https://dconaninfosearch.onrender.com
+
+---
+
+## ✅ TODO（规划中）
+
+- [ ] 集成向量数据库，实现基于语义的问答系统（RAG）
+- [ ] 支持 LLM 问答，基于 OpenAI API、Deepseek、Gemini 等平台
+- [ ] 多轮对话支持与回答出处追踪
+- [ ] 设立“辟谣”模块，方便粉丝了解与辨识
+

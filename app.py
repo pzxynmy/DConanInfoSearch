@@ -1,105 +1,181 @@
-# 文件: app.py
+from flask import Flask, render_template, request, jsonify
 import os
-import time
 import re
-import random
-import json
-
-from flask import Flask, request, redirect, render_template, make_response, jsonify, session
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 from utils.interview_sources import get_interview_metadata
-from utils.config import MANGA_TEXT_DIR, INTERVIEW_DATA_DIR
-from utils.cache_utils import init_manga_cache, init_interview_cache, manga_text_cache, interview_text_cache
-from utils.search_utils import count_word_in_documents
-from utils.quiz_utils import load_quiz_bank
 
-# Flask init
+
 app = Flask(__name__, static_folder="static", template_folder="templates")
-app.secret_key = "your-secret-key"
 
-# Rate limit
-limiter = Limiter(get_remote_address, app=app, default_limits=["60 per minute"])
+# 🚀 内存缓存 - 性能优化
+ENABLE_CACHE = os.environ.get("ENABLE_CACHE", "true").lower() == "true"
+manga_text_cache = {}  # 漫画文本缓存
+interview_text_cache = {}  # 访谈文本缓存
 
-# Quiz bank init
-quiz_bank = load_quiz_bank()
+# 🚀 通用缓存初始化辅助函数
+def _init_cache_from_directory(cache_dict, base_dir, content_type, use_walk=False):
+    """通用缓存初始化函数
+    
+    Args:
+        cache_dict: 目标缓存字典
+        base_dir: 基础目录路径
+        content_type: 内容类型描述（用于日志）
+        use_walk: 是否使用os.walk递归遍历子目录
+    """
+    if not ENABLE_CACHE or cache_dict:
+        return
+    
+    if not os.path.exists(base_dir):
+        return
+    
+    print(f"📥 正在预加载{content_type}到内存缓存...")
+    
+    if use_walk:
+        # 递归遍历子目录
+        for root, _, files in os.walk(base_dir):
+            for filename in files:
+                if filename.endswith(".txt"):
+                    filepath = os.path.join(root, filename)
+                    rel_path = os.path.relpath(filepath, base_dir)
+                    try:
+                        with open(filepath, encoding="utf-8") as f:
+                            cache_dict[rel_path] = f.read()
+                    except Exception as e:
+                        print(f"❌ 缓存文件失败 {rel_path}: {e}")
+    else:
+        # 只遍历当前目录
+        for filename in os.listdir(base_dir):
+            if filename.endswith(".txt"):
+                file_path = os.path.join(base_dir, filename)
+                try:
+                    with open(file_path, encoding="utf-8") as f:
+                        cache_dict[filename] = f.read()
+                except Exception as e:
+                    print(f"❌ 缓存文件失败 {filename}: {e}")
+    
+    print(f"✅ 已缓存 {len(cache_dict)} 个{content_type}文件")
 
-# =============================
-# 页面入口：答题验证界面
-# =============================
-@app.route("/", methods=["GET", "POST"])
-def quiz_entry():
-    if not quiz_bank:
-        print("⚠️ 当前无题库，自动跳过验证流程")
-        resp = make_response(redirect("/search_page"))
-        resp.set_cookie("verified", "true")
-        return resp
+def init_manga_cache():
+    """初始化漫画文本缓存"""
+    _init_cache_from_directory(manga_text_cache, "data/japanese_text", "漫画文本")
 
-    if request.method == "POST":
-        user_answer = request.form.get("answer", "").strip()
-        correct_answer = session.get("correct_answer", "")
-        if user_answer == correct_answer:
-            resp = make_response(redirect("/search_page"))
-            resp.set_cookie("verified", "true")
-            return resp
-        return render_template("quiz.html", question=session.get("question", "题库加载失败"), error="回答错误，请再试一次")
+def init_interview_cache():
+    """初始化访谈文本缓存"""
+    _init_cache_from_directory(interview_text_cache, "data/interviews", "访谈文本", use_walk=True)
 
-    # GET 出题
-    q = random.choice(quiz_bank)
-    session["question"] = q["question"]
-    session["correct_answer"] = q["answer"]
-    return render_template("quiz.html", question=q["question"])
+# 功能一：漫画文本检索（优化版）
+def count_word_in_documents(word):
+    result = []
+    base_dir = "data/japanese_text"
+    
+    # 🚀 使用缓存或直接读取文件
+    if ENABLE_CACHE:
+        init_manga_cache()  # 懒加载
+        file_data = manga_text_cache
+    else:
+        # 原始方式：直接读取文件
+        file_data = {}
+        if not os.path.exists(base_dir):
+            return result
+        
+        for filename in os.listdir(base_dir):
+            if filename.endswith(".txt"):
+                file_path = os.path.join(base_dir, filename)
+                with open(file_path, encoding="utf-8") as f:
+                    file_data[filename] = f.read()
+    
+    # 处理逻辑保持不变
+    for filename, text in file_data.items():
+        # 分页结构：===Page X===
+        pages = re.split(r"===Page (\d+)===", text)
+        page_nums = []
+        total_count = 0
 
-# =============================
-# 搜索界面页面（前端 HTML）
-# =============================
-@app.route("/search_page")
-def search_page():
-    verified = request.cookies.get("verified")
-    if verified != "true":
-        return redirect("/")
+        # 结构：['', page_num1, content1, page_num2, content2, ...]
+        for i in range(1, len(pages) - 1, 2):
+            page_number = int(pages[i])
+            content = pages[i + 1]
+            count = content.count(word)
+            if count > 0:
+                page_nums.append(page_number)
+                total_count += count
+
+        if total_count > 0:
+            volume_match = re.match(r"^(\d+)\.txt$", filename)
+            volume = int(volume_match.group(1)) if volume_match else filename
+            result.append({
+                "volume": volume,
+                "count": total_count,
+                "pages": sorted(page_nums)
+            })
+
+    # ✅ 按卷号排序
+    result.sort(key=lambda x: x["volume"])
+    return result
+
+# 首页：返回 HTML 页面
+@app.route("/")
+def home():
     return render_template("index.html")
 
-# =============================
 # 漫画文本检索接口
-# =============================
 @app.route("/search", methods=["POST"])
 def search():
     word = request.form.get("word", "").strip()
     result = count_word_in_documents(word)
     return jsonify(result)
 
-# =============================
-# 访谈资料搜索接口
-# =============================
+# 访谈资料接口（优化版）
 @app.route("/interview_search", methods=["POST"])
 def interview_search():
     word = request.form.get("word", "").strip()
-    base_dir = INTERVIEW_DATA_DIR
+    base_dir = "data/interviews"
     results = []
 
     if not word:
         return jsonify(results)
 
-    file_data = interview_text_cache if os.environ.get("ENABLE_CACHE", "true").lower() == "true" else {}
-    if not file_data:
-        init_interview_cache()
+    # 🚀 使用缓存或直接读取文件
+    if ENABLE_CACHE:
+        init_interview_cache()  # 懒加载
         file_data = interview_text_cache
+    else:
+        # 原始方式：直接读取文件
+        file_data = {}
+        for root, _, files in os.walk(base_dir):
+            for filename in files:
+                if filename.endswith(".txt"):
+                    filepath = os.path.join(root, filename)
+                    rel_path = os.path.relpath(filepath, base_dir)
+                    try:
+                        with open(filepath, encoding="utf-8") as f:
+                            file_data[rel_path] = f.read()
+                    except Exception as e:
+                        print(f"❌ Error reading {filepath}: {e}")
 
+    # 处理逻辑保持不变
     for rel_path, text in file_data.items():
         try:
             count = text.count(word)
             if count > 0:
-                sentences = re.split(r'[\u3002！？\n]', text)
-                snippets = [f"...{s.strip()}..." for s in sentences if word in s][:3]
+                # 匹配句子片段（简化处理：用句号、换行、问号、叹号分句）
+                sentences = re.split(r'[。！？\n]', text)
+                matched_snippets = []
+                for s in sentences:
+                    if word in s:
+                        snippet = f"...{s.strip()}..."
+                        matched_snippets.append(snippet)
+                matched_snippets = matched_snippets[:3]  # 最多 3 条
+
+                # 来源信息：可以继续扩展更多规则
                 meta = get_interview_metadata(rel_path)
+
                 results.append({
                     "file": rel_path,
                     "count": count,
                     "source": meta["source"],
                     "url": meta["url"],
-                    "snippets": snippets
+                    "snippets": matched_snippets
                 })
         except Exception as e:
             print(f"❌ Error processing {rel_path}: {e}")
@@ -107,29 +183,27 @@ def interview_search():
     results.sort(key=lambda x: -x["count"])
     return jsonify(results)
 
-# =============================
-# 调试接口
-# =============================
+
+# 🚀 缓存状态查看接口（调试用）
 @app.route("/cache_status")
 def cache_status():
+    """查看缓存状态"""
     status = {
-        "cache_enabled": os.environ.get("ENABLE_CACHE", "true").lower() == "true",
+        "cache_enabled": ENABLE_CACHE,
         "manga_cache_size": len(manga_text_cache),
-        "interview_cache_size": len(interview_text_cache)
+        "interview_cache_size": len(interview_text_cache),
+        "total_memory_usage_mb": sum(len(text.encode('utf-8')) for text in manga_text_cache.values()) / 1024 / 1024 +
+                                sum(len(text.encode('utf-8')) for text in interview_text_cache.values()) / 1024 / 1024
     }
     return jsonify(status)
 
-@app.route("/ping")
-def ping():
-    return jsonify({"status": "alive", "timestamp": int(time.time())})
-
+# 未来：接入 LLM 问答接口
 @app.route("/ask", methods=["POST"])
 def ask():
     question = request.form.get("question", "")
     return jsonify({"answer": f"暂未接入 LLM，收到问题：{question}"})
 
-# 启动检查 + 启动服务
+# 启动服务（适配 Render 的 PORT 环境变量）
 if __name__ == "__main__":
-    from utils.startup_check import startup_check
-    startup_check()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 7860)))
+    port = int(os.environ.get("PORT", 7860))
+    app.run(host="0.0.0.0", port=port)

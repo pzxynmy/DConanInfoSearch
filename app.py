@@ -3,6 +3,7 @@ import os
 import re
 
 from utils.interview_sources import get_interview_metadata
+from scripts.word_expand import word_expand
 
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
@@ -156,27 +157,29 @@ def interview_search():
     # 处理逻辑保持不变
     for rel_path, text in file_data.items():
         try:
-            count = text.count(word)
-            if count > 0:
-                # 匹配句子片段（简化处理：用句号、换行、问号、叹号分句）
-                sentences = re.split(r'[。！？\n]', text)
-                matched_snippets = []
-                for s in sentences:
-                    if word in s:
-                        snippet = f"...{s.strip()}..."
-                        matched_snippets.append(snippet)
-                matched_snippets = matched_snippets[:3]  # 最多 3 条
+            words = word_expand(word)
+            for word in words:
+                count = text.count(word)
+                if count > 0:
+                    # 匹配句子片段（简化处理：用句号、换行、问号、叹号分句）
+                    sentences = re.split(r'[。！？\n]', text)
+                    matched_snippets = []
+                    for s in sentences:
+                        if word in s:
+                            snippet = f"...{s.strip()}..."
+                            matched_snippets.append(snippet)
+                    matched_snippets = matched_snippets[:3]  # 最多 3 条
 
-                # 来源信息：可以继续扩展更多规则
-                meta = get_interview_metadata(rel_path)
+                    # 来源信息：可以继续扩展更多规则
+                    meta = get_interview_metadata(rel_path)
 
-                results.append({
-                    "file": rel_path,
-                    "count": count,
-                    "source": meta["source"],
-                    "url": meta["url"],
-                    "snippets": matched_snippets
-                })
+                    results.append({
+                        "file": rel_path,
+                        "count": count,
+                        "source": meta["source"],
+                        "url": meta["url"],
+                        "snippets": matched_snippets
+                    })
         except Exception as e:
             print(f"❌ Error processing {rel_path}: {e}")
 
